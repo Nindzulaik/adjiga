@@ -1,207 +1,175 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[codz]
-*$py.class
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Слова в ураган — Particle Tornado</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: Arial, sans-serif; }
+        canvas { display: block; }
+        #controls {
+            position: absolute; top: 10px; left: 10px; color: white; z-index: 10;
+        }
+        input, button { margin: 5px; padding: 8px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input type="text" id="textInput" value="УРАГАН" placeholder="Введите текст">
+        <button onclick="explodeText()">Запустить ураган!</button>
+    </div>
+    <canvas id="canvas"></canvas>
 
-# C extensions
-*.so
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let particles = [];
+        let width, height;
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4 - 1; // небольшой подъём вверх
+                this.color = color;
+                this.size = Math.random() * 4 + 2;
+                this.life = 300 + Math.random() * 200; // сколько кадров жить
+                this.angle = Math.random() * Math.PI * 2;
+                this.angularSpeed = (Math.random() - 0.5) * 0.2;
+                this.radius = 0; // для спирального движения
+            }
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+            update() {
+                // Спиральное движение (ураган)
+                this.angle += this.angularSpeed;
+                this.radius += 0.15; // раскручиваемся
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py.cover
-.hypothesis/
-.pytest_cache/
-cover/
+                const centerX = width / 2;
+                const centerY = height * 0.7;
 
-# Translations
-*.mo
-*.pot
+                // Притяжение к центру урагана + спираль
+                const dx = centerX - this.x;
+                const dy = centerY - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+                this.vx += (dx / dist) * 0.08;     // притяжение к центру
+                this.vy += (dy / dist) * 0.05 - 0.12; // подъём вверх
 
-# Flask stuff:
-instance/
-.webassets-cache
+                // Добавляем вихрь
+                this.vx += Math.sin(this.angle) * 0.6;
+                this.vy += Math.cos(this.angle) * 0.4;
 
-# Scrapy stuff:
-.scrapy
+                this.x += this.vx;
+                this.y += this.vy;
 
-# Sphinx documentation
-docs/_build/
+                this.vx *= 0.98; // трение
+                this.vy *= 0.98;
 
-# PyBuilder
-.pybuilder/
-target/
+                this.life--;
+                this.size *= 0.995; // медленно уменьшаемся
+            }
 
-# Jupyter Notebook
-.ipynb_checkpoints
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life / 400;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
 
-# IPython
-profile_default/
-ipython_config.py
+        // Получаем позиции пикселей текста
+        function getTextParticles(text) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCanvas.width = width;
+            tempCanvas.height = height;
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+            tempCtx.font = 'bold 120px Arial';
+            tempCtx.fillStyle = 'white';
+            tempCtx.textAlign = 'center';
+            tempCtx.textBaseline = 'middle';
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+            const lines = text.split('\n');
+            const lineHeight = 130;
+            const startY = height / 2 - (lines.length - 1) * lineHeight / 2;
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
+            lines.forEach((line, i) => {
+                tempCtx.fillText(line, width / 2, startY + i * lineHeight);
+            });
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
-#poetry.toml
+            const imageData = tempCtx.getImageData(0, 0, width, height).data;
+            const particlesArray = [];
 
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-#pdm.lock
-#pdm.toml
-.pdm-python
-.pdm-build/
+            for (let y = 0; y < height; y += 3) {        // шаг 3 для производительности
+                for (let x = 0; x < width; x += 3) {
+                    const index = (y * width + x) * 4;
+                    if (imageData[index + 3] > 128) {   // если пиксель непрозрачный
+                        const hue = (x / width) * 360;  // красивый градиент цвета
+                        particlesArray.push({
+                            x: x,
+                            y: y,
+                            color: `hsl(${hue}, 100%, 70%)`
+                        });
+                    }
+                }
+            }
+            return particlesArray;
+        }
 
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-#pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi
+        function explodeText() {
+            const input = document.getElementById('textInput').value || "УРАГАН";
+            particles = []; // очищаем старые
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
+            const textPoints = getTextParticles(input);
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
+            textPoints.forEach(point => {
+                const p = new Particle(point.x, point.y, point.color);
+                // Даём начальный импульс разлёта
+                p.vx = (point.x - width/2) * 0.05 + (Math.random() - 0.5) * 8;
+                p.vy = (point.y - height/2) * 0.03 - 5; // вверх
+                particles.push(p);
+            });
+        }
 
-# SageMath parsed files
-*.sage.py
+        function animate() {
+            // Полупрозрачный чёрный фон для шлейфа
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            ctx.fillRect(0, 0, width, height);
 
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
 
-# Spyder project settings
-.spyderproject
-.spyproject
+                if (p.life <= 0 || p.size < 0.5) {
+                    particles.splice(i, 1);
+                }
+            }
 
-# Rope project settings
-.ropeproject
+            requestAnimationFrame(animate);
+        }
 
-# mkdocs documentation
-/site
+        // Старт
+        animate();
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
-
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
-
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
-
-# Ruff stuff:
-.ruff_cache/
-
-# PyPI configuration file
-.pypirc
-
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
-
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
+        // Автоматический запуск при загрузке
+        window.onload = () => {
+            setTimeout(() => explodeText(), 500);
+        };
+    </script>
+</body>
+</html>
